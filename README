@@ -1,0 +1,167 @@
+ The first answer in periodic task execution is to use a form of cron.
+ While this is an appropriate solution for many cases,
+ most users are not shell scripters nor willing to handle cron syntax.
+
+ The vision of SchedDesk is to provide user friendly and effective task scheduling.
+ -Handle regular and ad hoc time assignments to tasks
+ -Flexible integration with 3rd party systems
+ -Reliably scheduled task execution
+ -Informative reports
+ -Web interface
+ -RESTful API
+ -Data and execution model for real world situations and users
+
+ Phrases describing the expected context of usage:
+ -Small scale installations
+ -Office intranet
+ -Automated data loading or other business level tasks
+ -Easy deployment
+ -Users: Office workers
+
+ It is not the intent to:
+ -Perform personal alarms or reminders (many things do that already)
+ -Perform critical system maintenance (cron does that very well)
+ -Scale to large sets of tasks or users (YMMV)
+ -Maintain extreme time precision of tasks.
+
+
+ Context:
+ The User has a number of routines he wishes to schedule.
+  He identifies routines by his name for them.
+  The User, like the world he lives in, is fickle and things change all the time.
+  The general purpose of his routines stay the same, but details may change
+  over time. Continuity in reporting is important.
+
+ The Integrator installs SchedDesk and integrates with the user's routines.
+  Ensures that SchedDesk can dispatch the routine.
+  Ensures that routine parameters are passed to routine.
+  Ensures that the routine can communicate failure/success to SchedDesk.
+
+ Goals:
+ Reduce cost of integration via modular Execution model.
+
+
+ Anticipate the following situations in the real world:
+
+ 1) Users may reschedule or cancel tasks ad hoc
+ 2) The Scheduler may be incapicitated for significant spans of time
+ 3) Tasks may be initiate but never complete or fail to report completion.
+ 4) Backlogs in execution may delay execution of a task instance so it completes
+ past the next task instance.
+ 5) A task instance, especially executing in the context of a backlog,
+ may already aggregate the results of otherwise succeeding task instances.
+ 6) For performance and space reasons, the size of the Event Log and the Completion log is limited.
+ 7) Users change task frequency and parameters
+ 8) The user may invalidate any successful completion in the Checklist.
+  Its possible that task parameters differ from the current routine parameters.
+  The user should be able to peruse the routine modification history and choose
+  an appropriate one for that task.
+ 9) It is possible that the user may want to invalidate many tasks
+
+
+ High Level Data Model:
+
+ Routines are procedures intended to execute at a specific frequency.
+ A schedule defines a list of routines.
+ A task is the execution of a specific routine at some "multiple" of its frequency.
+ The Event Log records task execution and termination.
+ The Checklist contains successful and canceled tasks.
+ AdHocs modify the execution time or parameters of a specific task.
+ AdHocs may only apply to non-executing tasks.
+
+ The Time Window constrains the span of time in which routines regularly run.
+  The user defines the beginning of the window.
+  The window's start bounds the Checklist's start.
+  The end of the window slides to the time of latest next task.
+  The user may assign ad hoc times to tasks outside the window.
+
+ Execution Model:
+
+ Data containment
+
+ The Database persistently holds:
+ -Schedule
+  -Routines must define a frequency and a time of first execution.
+   -Maintains entire routine family chain
+  -Time dependence (whether behaviour changes based on intended execution time)
+  -If not time dependent then Checklist holes are irrelevant
+ -Event Log
+  -Time arranged list of task events
+ -Checklist
+  -Tasks are identified by the routine ID and time execution (UTC seconds).
+  -Each entry either
+   -Identifies a successful completion event OR
+   -Indicates user intervention (cancellation or success, message)
+ -Ad Hoc adjustments
+  -Ad hoc adjustments of unexecuted tasks will be in their own db.
+   When the task terminates, the ad hoc info will be recorded with it
+   and deleted from the ad hoc database.
+
+ The Scheduler (volatilely) holds:
+ -Map of Tasks -> execution times (in practice timeout operations)
+ -List of executing Tasks
+
+ Config file/main script
+ -Defines time window start
+ -Defines Database configuration parameters
+ -Defines Scheduler configuration parameters
+
+ Operation
+
+ The Database
+  The Database is mostly modified by the Scheduler.
+  The Database exports reporting API without requiring Scheduler.
+ -Maintain continuity in Checklist even if users modify routines.
+
+ The Scheduler assigns execution times to tasks.
+  The Scheduler inspects the Checklist to assign times to prior uncompleted Tasks.
+  The Scheduler interprets the Schedule to assign future times to the most immediate task of each routine.
+  The Scheduler regulates all changes to the Database
+   Consequently exports most of the functional interface
+   Scheduler also exports a reporting API
+
+ Tasks may terminate:
+  -successfully (Scheduler will make required Event Log entry)
+  -in error
+  -cancelled by user
+  -marked as complete by user
+
+ The Scheduler will emit the "dispatch" event when a task should be initiated.
+ At this the time Scheduler passes the task information and a completion closure.
+ While the Scheduler is not concerned with the details of HOW the task is accomplished,
+ it will expect the receiver of the event to eventually call the closure.
+
+ It is the intent of SchedDesk to provide a model for code handling dispatches.
+ The DispatchModule is a class that specifies the interface to code handling dispatches.
+
+
+ Design Considerations:
+
+ -All time is measured internally by UTC time. There is no notion of savings time.
+
+  The user may slide the beginning of the window forward or backward in time
+  depending on business needs.
+  Sliding the window forward has no immediate effect.
+  Sliding the window backward may create a span of holes in the Completion Log.
+
+ -When a user schedules a task to run ad hoc, SchedDesk must maintain the
+  original time context of execution. For example a task scheduled to gather
+  weekly data on Friday may be moved to Thursday or Sat to pull the same data.
+
+ Knowing the completion of tasks requires two kinds of reports:
+ A) Whether a particular task instance completed
+ B) At what time the tasks completed
+
+ Corollaries
+ -Each successful task in the Checklist must map to an Task Event.
+ -Note that a set of tasks of a common routine may map to a single Task Event.
+ -Each Task Event must identify only a single Task.
+
+ Implemenation:
+ -Implemented in node.js
+ -Usage of Javascript motivates the use of JSON as persistent data representation.
+
+
+Other work:
+ Hudson http://hudson-ci.org is another solution, but usable only by developers.
+ Windows Scheduler
