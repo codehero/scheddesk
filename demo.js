@@ -32,12 +32,12 @@ app.configure('production', function(){
 
 // Configuration
 app.configure(function(){
-		app.set('views', __dirname + '/views');
+		sys.puts(__dirname);
 		app.use(express.logger());
-		app.use(express.bodyDecoder());
+		app.use(express.bodyParser());
 		app.use(express.methodOverride());
 		app.use(app.router);
-		app.use(express.staticProvider(__dirname + "/public"));
+		app.use(express.static(__dirname + "/public", {}));
 });
 
 var couchConf = {
@@ -64,6 +64,7 @@ cdb.addListener("init", function(err, data){
 });
 
 scheduler.addListener("init", function(){
+	sys.puts("Scheduler loaded");
 	w.init();
 });
 
