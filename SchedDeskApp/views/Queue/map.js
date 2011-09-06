@@ -14,6 +14,6 @@ function(doc){
 
 	/* All enqueue/completed events contain schedesk attributes. */
 	if("scheddesk_trigger" in doc){
-		emit([doc.scheddesk_trigger.scheduledTime, doc._id], {"_id":doc._id});
+		emit([doc.scheddesk_trigger.timestamp, doc._id], {"_id":doc._id});
 	}
 }
