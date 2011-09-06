@@ -160,7 +160,7 @@ function (newDoc, savedDoc, userCtx){
 						throw({"forbidden":"Invalid retry time!"});
 				}
 				else{
-					if("retryTime" in savedDoc)
+					if(savedDoc && "retryTime" in savedDoc)
 						throw({"forbidden":"Cannot delete retry time!"});
 				}
 				break;
