@@ -165,3 +165,7 @@
 Other work:
  Hudson http://hudson-ci.org is another solution, but usable only by developers.
  Windows Scheduler
+
+ CREDITS:
+ -jquery datetimepicker by Trent Richardson: https://github.com/trentrichardson/jQuery-Timepicker-Addon
+ -jquery ui 1.8.2
