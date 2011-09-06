@@ -1,29 +1,175 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>My New CouchApp</title>
-    <link rel="stylesheet" href="style/main.css" type="text/css">
-  </head>
-  <body>
-    <div id="account"></div>
+	<head>
+		<title>Schedule Desktop</title>
+		<link type="text/css" href="style/jquery.ui.css" rel="stylesheet"/>
+		<link type="text/css" href="style/jquery-ui-timepicker-addon.css" rel="stylesheet"/>
+  	<script src="vendor/couchapp/loader.js"></script>
+		<script type="text/javascript" src="script/jquery.ui.js"></script>
+		<script type="text/javascript" src="script/scheddesk.js"></script>
+		<script type="text/javascript" src="script/jquery-ui-timepicker-addon.js"></script>
 
-    <h1>Generated CouchApp</h1>
+		<script type="text/javascript">
+			/* Get the DB name. */
+			var urlParts = document.URL.split("/");
+			var DB_NAME = urlParts[3];
 
-    <div id="profile"></div>
-    <div id="items"></div>
+			$(document).ready(function() {
+				$("#tabDiv").tabs();
 
-    <div id="sidebar">
-      <p>Edit welcome message.</p>
-      <p>Ideas: You could easily turn this into a photo sharing app, or a grocery list, or a chat room.</p>
-    </div>
-  </body>
-  <script src="vendor/couchapp/loader.js"></script>
-  <script type="text/javascript" charset="utf-8">
-    $.couch.app(function(app) {
-      $("#account").evently("account", app);
-      $("#profile").evently("profile", app);
-      $.evently.connect("#account","#profile", ["loggedIn","loggedOut"]);
-      $("#items").evently("items", app);
-    });
-  </script>
+				$("#startTime").datetimepicker();
+				$("#endTime").datetimepicker();
+
+				/* Populate Task Definitions. */
+				$.couch.app(function(app) {
+					var db = $.couch.db(DB_NAME);
+					db.view("SchedDeskApp/Tasks",
+						{
+							"success": function(data, textStatus){
+								var tbody = $("#taskTableBody").empty();
+								for(var i = 0; i < data.rows.length; ++i){
+									var row = "<tr><td>"+ data.rows[i].key +"</td>";
+									row += "<td><a href=\"/_utils/document.html?"+
+										DB_NAME +"/"+ data.rows[i].id +"\">Go</a></td></tr>"
+									tbody.append($(row));
+								}
+							}
+						}
+					);
+
+					/* Show uncompleted tasks. */
+					db.list("SchedDeskApp/StateQuery", "SchedDeskApp/State",
+						{
+							"op":"lt",
+							"maskValue":"0x4",
+							"success": function(data, textStatus){
+								var tbody = $("#taskListingBody").empty();
+								for(var i = 0; i < data.length; ++i){
+									var ts = data[i].ts < 0 ?
+										"Immediate" : scheddeskFormatDate(new Date(data[i].ts));
+									var cause = data[i].cause ? "Unknown" : data[i].cause;
+									var row = "<td>"+ taskStateStrings[data[i].mask] +"</td>";
+									row += "<td>"+ cause +"</td>";
+									row += "<td>"+ ts +"</td>";
+									row += "<td><a href=\"/_utils/document.html?"+
+										DB_NAME +"/"+ data[i]._id +"\">Go</a></td></tr>"
+									tbody.append($(row));
+								}
+							}
+						}
+					);
+
+					/*  */
+					$("#doLogQuery").click(function(){
+						try{
+							var start = new Date($("#startTime").val()).getTime();
+							var end = new Date($("#endTime").val()).getTime();
+							if(end < start)
+								throw new Error("End time must be after start time!");
+
+							db.view("SchedDeskApp/Queue",
+								{
+									"startkey":[start, null],
+									"endkey":[end, null],
+									"include_docs":true,
+									"success": function(data, textStatus){
+										var tbody = $("#logTableBody").empty();
+										for(var i = 0; i < data.rows.length; ++i){
+											var d = scheddeskFormatDate(new Date(data.rows[i].key[0]));
+											var parts = data.rows[i].value._id.split(".");
+											var type = null;
+											if(parts.length > 2 && parts[0] == "scheddesk"){
+												if(parts[1] == "dequeue")
+													type = "Dequeued for processing.";
+												else if(parts[1] == "termination")
+													type = "Process ended.";
+											}
+											if(!type)
+												type = "Trigger";
+											var row = "<tr><td>"+ d +"</td>";
+
+											row += "<td>"+ type +"</td>";
+											row += "<td><a href=\"/_utils/document.html?"+
+												DB_NAME +"/"+ data.rows[i].key[1] +"\">Go</a></td></tr>"
+											tbody.append($(row));
+										}
+									}
+								}
+							);
+						}
+						catch(e){
+							alert(e.message);
+						}
+					});
+				});
+
+			});
+		</script>
+	</head>
+
+	<body>
+		<div id="tabDiv">
+			<ul>
+				<li><a href="#taskDefTab"><span>Task Definitions</span></a></li>
+				<li><a href="#taskListingTab"><span>Task Listing</span></a></li>
+				<li><a href="#scheduleTab"><span>Routine Schedule</span></a></li>
+				<li><a href="#logTab"><span>Log</span></a></li>
+			</ul>
+
+			<div id="taskDefTab">
+				<table border="1">
+					<thead>
+						<th>Task Name</th>
+						<th>Details</th>
+					</thead>
+					<tbody id="taskTableBody"></tbody>
+				</table>
+			</div>
+
+			<div id="taskListingTab">
+				<table border="1">
+					<thead>
+						<th>State</th>
+						<th>Cause</th>
+						<th>Scheduled Time</th>
+						<th>Trigger Document</th>
+					</thead>
+					<tbody id="taskListingBody"></tbody>
+				</table>
+			</div>
+
+			<div id="scheduleTab">
+				<h1>TODO</h1>
+			</div>
+
+			<div id="logTab">
+				<table>
+					<tbody>
+						<tr>
+							<td>Search Range Start</td>
+							<td><input id="startTime" type="text"/></td>
+						</tr>
+						<tr>
+							<td>Search Range End</td>
+							<td><input id="endTime" type="text"/></td>
+						</tr>
+						<tr>
+							<td><input id="doLogQuery" type="button" value="Retrieve Times"/></td>
+						</tr>
+					</tbody>
+				</table>
+
+				<table border="1">
+					<thead>
+						<th>Timestamp</th>
+						<th>Event</th>
+						<th>Trigger Document</th>
+						<th>Event Details</th>
+					</thead>
+					<tbody id="logTableBody"></tbody>
+				</table>
+
+			</div>
+		</div>
+	</body>
 </html>
