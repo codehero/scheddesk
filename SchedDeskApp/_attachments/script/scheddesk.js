@@ -23,7 +23,7 @@ function scheddeskFormatDate(d){
 	if(h < 10)
 		h = "0" + h;
 
-	var mins = d.getHours();
+	var mins = d.getMinutes();
 	if(mins < 10)
 		mins = "0" + mins;
 
