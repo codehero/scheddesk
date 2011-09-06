@@ -92,7 +92,9 @@ function (newDoc, savedDoc, userCtx){
 						throw({"forbidden":".period.time.isClock must be boolean!"});
 
 					var v = newDoc.period.time.value;
-					if(!(v instanceof Array) || v.length != valueLength)
+					//if(!(v instanceof Array))
+					//	throw({"forbidden":"period.time.value is not an array!"});
+					if(v.length != valueLength)
 						throw({"forbidden":"period.time.value has incorrect length!"});
 
 					/* Check seconds, minutes. */
