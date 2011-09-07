@@ -14,6 +14,11 @@
 			var urlParts = document.URL.split("/");
 			var DB_NAME = urlParts[3];
 
+			function dataLink(id, text){
+				return "<a href=\"/_utils/document.html?"+
+					DB_NAME +"/"+ id +"\">"+ text +"</a>";
+			}
+
 			$(document).ready(function() {
 				$("#tabDiv").tabs();
 
@@ -27,11 +32,39 @@
 						{
 							"success": function(data, textStatus){
 								var tbody = $("#taskTableBody").empty();
+
+								function genTrigger(id){
+									return function(){
+										var now = new Date().getTime();
+										var tdoc = {
+											"_id" : "scheddesk.manualTrigger." + now,
+											"scheddesk_trigger":{
+												"timestamp" : now,
+												"taskDefinition" : id,
+												"scheduledTime" : -1
+											},
+										};
+
+										db.saveDoc(tdoc, {
+											"success":function(data, textStatus){
+												alert("Action queued.");
+											}
+										});
+									}
+								}
+
 								for(var i = 0; i < data.rows.length; ++i){
-									var row = "<tr><td>"+ data.rows[i].key +"</td>";
-									row += "<td><a href=\"/_utils/document.html?"+
-										DB_NAME +"/"+ data.rows[i].id +"\">Go</a></td></tr>"
-									tbody.append($(row));
+									var row = [
+										data.rows[i].key,
+										(data.rows[i].value.length == 0) ?
+											"<input type=\"button\" value=\"Initiate\"/>" : "---",
+										dataLink(data.rows[i].id, "Go")
+									];
+
+									row = "<tr><td>"+ row.join("</td><td>") +"</td></tr>";
+									row = $(row);
+									row.find("input").click(genTrigger(data.rows[i].id));
+									tbody.append(row);
 								}
 							}
 						}
@@ -120,6 +153,7 @@
 				<table border="1">
 					<thead>
 						<th>Task Name</th>
+						<th>Action</th>
 						<th>Details</th>
 					</thead>
 					<tbody id="taskTableBody"></tbody>
