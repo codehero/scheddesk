@@ -18,13 +18,17 @@ function(head, req){
 	var resCount = 0;
 	while(r = getRow()){
 
-		if(resCount)
-			send(",");
 		if(op == "lt" && r.value.mask < maskValue){
+			if(resCount)
+				send(",");
+
 			send(JSON.stringify(r.value));
 			++resCount;
 		}
 		else if(op == "eq" && r.value.mask == maskValue){
+			if(resCount)
+				send(",");
+
 			send(JSON.stringify(r.value));
 			++resCount;
 		}
