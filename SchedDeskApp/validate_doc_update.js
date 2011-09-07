@@ -134,34 +134,35 @@ function (newDoc, savedDoc, userCtx){
 				break;
 
 			case "taskDefinition":
-				require("name");
-				require("taskType");
-				require("filesTermination");
-				if(newDoc.taskType ==  "child_process"){
-					require("params");
-					if(!newDoc.params.command)
-						throw({"forbidden":"Child process must define a command!"});
+				if(newDoc){
+					require("name");
+					require("taskType");
+					require("filesTermination");
+					if(newDoc.taskType ==  "child_process"){
+						require("params");
+						if(!newDoc.params.command)
+							throw({"forbidden":"Child process must define a command!"});
+					}
 				}
 				break;
 
 			case "dequeue":
-				if(savedDoc)
-					throw({"forbidden":"Cannot modify dequeued document!"});
-
-				require("timestamp");
-				require("triggerID");
-				if(isNaN(newDoc.timestamp))
-					throw({"forbidden":"Invalid dequeue timestamp!"});
-
-				if("retryTime" in newDoc){
-					if("retryTime" in savedDoc && newDoc.retryTime != savedDoc.retryTime)
-						throw({"forbidden":"Cannot modify retry time!"});
+				if(newDoc){
+					require("timestamp");
+					require("triggerID");
 					if(isNaN(newDoc.timestamp))
-						throw({"forbidden":"Invalid retry time!"});
-				}
-				else{
-					if(savedDoc && "retryTime" in savedDoc)
-						throw({"forbidden":"Cannot delete retry time!"});
+						throw({"forbidden":"Invalid dequeue timestamp!"});
+
+					if("retryTime" in newDoc){
+						if("retryTime" in savedDoc && newDoc.retryTime != savedDoc.retryTime)
+							throw({"forbidden":"Cannot modify retry time!"});
+						if(isNaN(newDoc.timestamp))
+							throw({"forbidden":"Invalid retry time!"});
+					}
+					else{
+						if(savedDoc && "retryTime" in savedDoc)
+							throw({"forbidden":"Cannot delete retry time!"});
+					}
 				}
 				break;
 
@@ -169,11 +170,16 @@ function (newDoc, savedDoc, userCtx){
 				if(savedDoc)
 					throw({"forbidden":"Cannot modify termination!"});
 
-				require("triggerID");
-				require("timestamp");
+				if(newDoc){
+					require("triggerID");
+					require("timestamp");
 
-				if(isNaN(newDoc.timestamp))
-					throw({"forbidden":"No numeric timestamp in completion!"});
+					if(isNaN(newDoc.timestamp))
+						throw({"forbidden":"No numeric timestamp in completion!"});
+				}
+				break;
+
+			case "manualTrigger":
 				break;
 
 			case "timedTrigger":
