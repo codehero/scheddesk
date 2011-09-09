@@ -74,14 +74,27 @@
 					db.list("SchedDeskApp/StateQuery", "SchedDeskApp/State",
 						{
 							"op":"lt",
-							"maskValue":"0x4",
+							"maskValue":"0x7",
+							"group" : true,
 							"success": function(data, textStatus){
 								var tbody = $("#taskListingBody").empty();
 								for(var i = 0; i < data.length; ++i){
 									var ts = data[i].ts < 0 ?
 										"Immediate" : scheddeskFormatDate(new Date(data[i].ts));
-									var cause = data[i].cause ? "Unknown" : data[i].cause;
-									var row = "<td>"+ taskStateStrings[data[i].mask] +"</td>";
+									var cause = data[i].cause;
+									if(!data[i].cause){
+										if(-1 != data[i]._id.indexOf("timedTrigger")){
+											cause = "Scheduled";
+										}
+										else if(-1 != data[i]._id.indexOf("manualTrigger")){
+											cause = "Manual";
+										}
+										else {
+											/* Assume cascade trigger. */
+											cause = "Cascade";
+										}
+									}
+									var row = "<tr><td>"+ taskStateStrings[data[i].mask] +"</td>";
 									row += "<td>"+ cause +"</td>";
 									row += "<td>"+ ts +"</td>";
 									row += "<td><a href=\"/_utils/document.html?"+
@@ -109,16 +122,7 @@
 										var tbody = $("#logTableBody").empty();
 										for(var i = 0; i < data.rows.length; ++i){
 											var d = scheddeskFormatDate(new Date(data.rows[i].key[0]));
-											var parts = data.rows[i].value._id.split(".");
-											var type = null;
-											if(parts.length > 2 && parts[0] == "scheddesk"){
-												if(parts[1] == "dequeue")
-													type = "Dequeued for processing.";
-												else if(parts[1] == "termination")
-													type = "Process ended.";
-											}
-											if(!type)
-												type = "Trigger";
+											var type = data.rows[i].value._id;
 											var row = "<tr><td>"+ d +"</td>";
 
 											row += "<td>"+ type +"</td>";
@@ -198,7 +202,6 @@
 						<th>Timestamp</th>
 						<th>Event</th>
 						<th>Trigger Document</th>
-						<th>Event Details</th>
 					</thead>
 					<tbody id="logTableBody"></tbody>
 				</table>
