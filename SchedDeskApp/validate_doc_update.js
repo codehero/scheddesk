@@ -185,6 +185,15 @@ function (newDoc, savedDoc, userCtx){
 			case "timedTrigger":
 				break;
 
+			case "exitCodeError":
+				require("scheddesk_err_report");
+				if(isNaN(newDoc.scheddesk_err_report.timestamp))
+					throw({"forbidden":"No numeric timestamp in error!"});
+
+				if(!("triggerID" in newDoc.scheddesk_err_report))
+					throw({"forbidden":"Error does not contain triggerID!"});
+				break;
+
 			default:
 				throw({"forbidden":"Unknown SchedDesk type " + parts[1] + "!"});
 		}
