@@ -1,0 +1,26 @@
+{
+	"name" : "scheddesk",
+	"description" : "Task Scheduler",
+	"version" : "0.1.0",
+	"preferGlobal" : false,
+	"homepage" : "https://github.com/codehero/scheddesk",
+	"author" : "Dave Bender",
+
+	"scripts":{
+	},
+
+	"engines" : {
+		"node" : "0.4 || 0.5",
+		"npm" : "1"
+	},
+
+	"files":[
+		"lib"
+	],
+
+	"directories":{
+		"lib" : "lib"
+	},
+
+	"main": "lib/couchdb.scheddesk"
+}
