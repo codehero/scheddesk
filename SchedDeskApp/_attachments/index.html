@@ -47,7 +47,7 @@
 
 										db.saveDoc(tdoc, {
 											"success":function(data, textStatus){
-												alert("Action queued.");
+												alert("Enqueued trigger: " + tdoc._id);
 											}
 										});
 									}
