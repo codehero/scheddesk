@@ -4,7 +4,7 @@ function (key, values, rereduce){
 		var latest = -Infinity;
 		var id = values[0]._id;
 		for(var i = 0; i < values.length; ++i){
-			m |= values[i].mask;
+			m ^= values[i].mask;
 			if(latest < values[i].ts)
 				latest = values[i].ts;
 		}

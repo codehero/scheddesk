@@ -152,17 +152,6 @@ function (newDoc, savedDoc, userCtx){
 					require("triggerID");
 					if(isNaN(newDoc.timestamp))
 						throw({"forbidden":"Invalid dequeue timestamp!"});
-
-					if("retryTime" in newDoc){
-						if("retryTime" in savedDoc && newDoc.retryTime != savedDoc.retryTime)
-							throw({"forbidden":"Cannot modify retry time!"});
-						if(isNaN(newDoc.timestamp))
-							throw({"forbidden":"Invalid retry time!"});
-					}
-					else{
-						if(savedDoc && "retryTime" in savedDoc)
-							throw({"forbidden":"Cannot delete retry time!"});
-					}
 				}
 				break;
 
@@ -177,6 +166,9 @@ function (newDoc, savedDoc, userCtx){
 					if(isNaN(newDoc.timestamp))
 						throw({"forbidden":"No numeric timestamp in completion!"});
 				}
+				break;
+
+			case "retryTrigger":
 				break;
 
 			case "manualTrigger":

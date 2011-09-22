@@ -7,6 +7,10 @@ function(doc){
 			emit([doc.timestamp, doc.triggerID], {"_id":doc._id});
 			return;
 		}
+		else if(parts[1] == "retry"){
+			emit([doc.timestamp, doc.triggerID], {"_id":doc._id});
+			return;
+		}
 		else if(parts[1] == "termination"){
 			emit([doc.timestamp, doc.triggerID], {"_id":doc._id});
 		}
