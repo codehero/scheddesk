@@ -8,6 +8,9 @@ function(head, req){
 	if(!("maskValue" in req.query))
 		throw new Error("No mask value defined!");
 
+	var preMask =
+		("preMask" in req.query) ? parseInt(req.query.preMask, 16) : 0xFFFF;
+
 	var op = req.query.op;
 	var maskValue = parseInt(req.query.maskValue, 16);
 	if(isNaN(maskValue))
@@ -18,20 +21,18 @@ function(head, req){
 	var resCount = 0;
 	while(r = getRow()){
 
-		if(op == "lt" && r.value.mask < maskValue){
-			if(resCount)
-				send(",");
-
-			send(JSON.stringify(r.value));
-			++resCount;
+		var v = r.value.mask & preMask;
+		if(op == "lt" && v < maskValue){
 		}
-		else if(op == "eq" && r.value.mask == maskValue){
-			if(resCount)
-				send(",");
-
-			send(JSON.stringify(r.value));
-			++resCount;
+		else if(op == "eq" && v == maskValue){
 		}
+		else
+			continue;
+
+		if(resCount)
+			send(",");
+		send(JSON.stringify(r));
+		++resCount;
 	}
 
 	send("]");

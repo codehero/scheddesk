@@ -2,12 +2,22 @@ var taskStateStrings = [
 	"Invalid",
 	"Queued",
 	"Invalid",
-	"Dequeued",
+	"Running",
 
 	"Invalid",
-	"Aborted",
+	"Queued for retry",
 	"Invalid",
-	"Completed"
+	"Errored out",
+
+	"Invalid",
+	"Invalid",
+	"Invalid",
+	"Completed",
+
+	"Invalid",
+	"Invalid",
+	"Invalid",
+	"Completed on retry"
 ];
 
 function scheddeskFormatDate(d){

@@ -61,8 +61,7 @@
 										dataLink(data.rows[i].id, "Go")
 									];
 
-									row = "<tr><td>"+ row.join("</td><td>") +"</td></tr>";
-									row = $(row);
+									row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
 									row.find("input").click(genTrigger(data.rows[i].id));
 									tbody.append(row);
 								}
@@ -74,32 +73,94 @@
 					db.list("SchedDeskApp/StateQuery", "SchedDeskApp/State",
 						{
 							"op":"lt",
-							"maskValue":"0x7",
+							"preMask" : "0xF",
+							"maskValue":"0x8",
 							"group" : true,
 							"success": function(data, textStatus){
 								var tbody = $("#taskListingBody").empty();
 								for(var i = 0; i < data.length; ++i){
-									var ts = data[i].ts < 0 ?
-										"Immediate" : scheddeskFormatDate(new Date(data[i].ts));
-									var cause = data[i].cause;
-									if(!data[i].cause){
-										if(-1 != data[i]._id.indexOf("timedTrigger")){
+									var e = data[i];
+									var ts = e.value.ts < 0 ?
+										"Immediate" : scheddeskFormatDate(new Date(e.value.ts));
+
+									var cause = e.value.cause;
+									if(!e.value.cause){
+										var id = e.value._id;
+										if(-1 != id.indexOf("timedTrigger")){
 											cause = "Scheduled";
 										}
-										else if(-1 != data[i]._id.indexOf("manualTrigger")){
+										else if(-1 != id.indexOf("manualTrigger")){
 											cause = "Manual";
+										}
+										else if(-1 != id.indexOf("retryTrigger")){
+											cause = "Retry";
 										}
 										else {
 											/* Assume cascade trigger. */
 											cause = "Cascade";
 										}
 									}
-									var row = "<tr><td>"+ taskStateStrings[data[i].mask] +"</td>";
-									row += "<td>"+ cause +"</td>";
-									row += "<td>"+ ts +"</td>";
-									row += "<td><a href=\"/_utils/document.html?"+
-										DB_NAME +"/"+ data[i]._id +"\">Go</a></td></tr>"
-									tbody.append($(row));
+
+									var row = [
+										taskStateStrings[e.value.mask],
+										cause,
+										ts,
+										dataLink(e.value._id, e.value._id)
+									];
+									row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
+
+									tbody.append(row);
+								}
+							}
+						}
+					);
+
+					/* Show open errors. */
+					db.list("SchedDeskApp/StateQuery", "SchedDeskApp/State",
+						{
+							"op":"eq",
+							"preMask" : "0xF",
+							"maskValue":"0x7",
+							"group" : true,
+							"success": function(data, textStatus){
+								var tbody = $("#errorTableBody").empty();
+								for(var i = 0; i < data.length; ++i){
+
+									var e = data[i];
+									var ts = e.value.ts < 0 ?
+										"Immediate" : scheddeskFormatDate(new Date(e.value.ts));
+
+									function genTrigger(triggerID,x){
+										return function(){
+
+											db.getDoc(x, function(){
+
+												var now = new Date().getTime();
+												var tdoc = {
+													 "_id": "scheddesk.retryTrigger." + now,
+													 "scheddesk_trigger": {
+															 "retryTriggerID": triggerID,
+															 "retryDequeueID": dequeueID,
+															 "timestamp": now,
+															 "taskDefinition": "scheddesk.retry",
+															 "scheduledTime": -1
+													 }
+												}
+											});
+										};
+									}
+
+									var row = [
+										ts,
+										e.value._id,
+										dataLink(e.value._id, "Go"),
+										dataLink(e.key, "Go"),
+										"<input type=\"button\" value=\"Initiate\"/>"
+									];
+									row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
+
+									row.find("input").click(genTrigger(e.value._id));
+									tbody.append(row);
 								}
 							}
 						}
@@ -122,13 +183,14 @@
 										var tbody = $("#logTableBody").empty();
 										for(var i = 0; i < data.rows.length; ++i){
 											var d = scheddeskFormatDate(new Date(data.rows[i].key[0]));
-											var type = data.rows[i].value._id;
-											var row = "<tr><td>"+ d +"</td>";
 
-											row += "<td>"+ type +"</td>";
-											row += "<td><a href=\"/_utils/document.html?"+
-												DB_NAME +"/"+ data.rows[i].key[1] +"\">Go</a></td></tr>"
-											tbody.append($(row));
+											var row = [
+												d,
+												dataLink(data.rows[i].key[1], data.rows[i].key[1]),
+												dataLink(data.rows[i].id, data.rows[i].id)
+											];
+											row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
+											tbody.append(row);
 										}
 									}
 								}
@@ -138,6 +200,7 @@
 							alert(e.message);
 						}
 					});
+
 				});
 
 			});
@@ -151,6 +214,7 @@
 				<li><a href="#taskListingTab"><span>Task Listing</span></a></li>
 				<li><a href="#scheduleTab"><span>Routine Schedule</span></a></li>
 				<li><a href="#logTab"><span>Log</span></a></li>
+				<li><a href="#errorTab"><span>Unresolved Errors</span></a></li>
 			</ul>
 
 			<div id="taskDefTab">
@@ -170,7 +234,7 @@
 						<th>State</th>
 						<th>Cause</th>
 						<th>Scheduled Time</th>
-						<th>Trigger Document</th>
+						<th>Trigger ID</th>
 					</thead>
 					<tbody id="taskListingBody"></tbody>
 				</table>
@@ -200,13 +264,27 @@
 				<table border="1">
 					<thead>
 						<th>Timestamp</th>
-						<th>Event</th>
-						<th>Trigger Document</th>
+						<th>Trigger ID</th>
+						<th>Event ID</th>
 					</thead>
 					<tbody id="logTableBody"></tbody>
 				</table>
 
 			</div>
+
+			<div id="errorTab">
+				<table border="1">
+					<thead>
+						<th>Timestamp</th>
+						<th>Trigger ID</th>
+						<th>Trigger Details</th>
+						<th>Error Details</th>
+						<th>Retry</th>
+					</thead>
+					<tbody id="errorTableBody"></tbody>
+				</table>
+			</div>
+
 		</div>
 	</body>
 </html>
