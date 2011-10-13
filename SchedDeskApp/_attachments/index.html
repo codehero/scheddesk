@@ -15,7 +15,7 @@
 			var DB_NAME = urlParts[3];
 
 			function dataLink(id, text){
-				return "<a href=\"/_utils/document.html?"+
+				return "<a target=\"_blank\" href=\"/_utils/document.html?"+
 					DB_NAME +"/"+ id +"\">"+ text +"</a>";
 			}
 
@@ -153,8 +153,8 @@
 									var row = [
 										ts,
 										e.value._id,
-										dataLink(e.value._id, "Go"),
 										dataLink(e.key, "Go"),
+										dataLink(e.value._id, "Go"),
 										"<input type=\"button\" value=\"Initiate\"/>"
 									];
 									row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
