@@ -28,6 +28,37 @@
 				/* Populate Task Definitions. */
 				$.couch.app(function(app) {
 					var db = $.couch.db(DB_NAME);
+
+					function genRetryTrigger(triggerID, errorID){
+						return function(){
+
+							db.openDoc(errorID,
+								{
+									"success":function(errorDoc){
+
+										var dequeueID = errorDoc.scheddesk_err_report.dequeueID;
+										var now = new Date().getTime();
+										var tdoc = {
+											 "_id": "scheddesk.retryTrigger." + now,
+											 "scheddesk_trigger": {
+													 "retryTriggerID": triggerID,
+													 "retryDequeueID": dequeueID,
+													 "timestamp": now,
+													 "taskDefinition": "scheddesk.retry",
+													 "scheduledTime": -1
+											 }
+										};
+										db.saveDoc(tdoc, {
+											"success":function(data, textStatus){
+												alert("Enqueued trigger: " + tdoc._id);
+											}
+										});
+									}
+								}
+							);
+						}
+					}
+
 					db.view("SchedDeskApp/Tasks",
 						{
 							"success": function(data, textStatus){
@@ -130,36 +161,16 @@
 									var ts = e.value.ts < 0 ?
 										"Immediate" : scheddeskFormatDate(new Date(e.value.ts));
 
-									function genTrigger(triggerID,x){
-										return function(){
-
-											db.getDoc(x, function(){
-
-												var now = new Date().getTime();
-												var tdoc = {
-													 "_id": "scheddesk.retryTrigger." + now,
-													 "scheddesk_trigger": {
-															 "retryTriggerID": triggerID,
-															 "retryDequeueID": dequeueID,
-															 "timestamp": now,
-															 "taskDefinition": "scheddesk.retry",
-															 "scheduledTime": -1
-													 }
-												}
-											});
-										};
-									}
-
 									var row = [
 										ts,
-										e.value._id,
+										e.key,
 										dataLink(e.key, "Go"),
 										dataLink(e.value._id, "Go"),
 										"<input type=\"button\" value=\"Initiate\"/>"
 									];
 									row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
 
-									row.find("input").click(genTrigger(e.value._id));
+									row.find("input").click(genRetryTrigger(e.key, e.value._id));
 									tbody.append(row);
 								}
 							}
