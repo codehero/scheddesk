@@ -6,5 +6,5 @@ function (doc){
 		return;
 
 	/* Key identifies if this routine is active or inactive. */
-	emit(doc.active ? 1 : 0, {"_id":doc._id});
+	emit(doc.active ? 1 : 0, {"_id":doc._id, "_rev":doc._rev});
 }
