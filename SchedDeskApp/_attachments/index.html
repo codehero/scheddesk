@@ -14,10 +14,55 @@
 			var urlParts = document.URL.split("/");
 			var DB_NAME = urlParts[3];
 
+			var g_sched = {};
+
 			function dataLink(id, text){
 				return "<a target=\"_blank\" href=\"/_utils/document.html?"+
 					DB_NAME +"/"+ id +"\">"+ text +"</a>";
 			}
+
+			function toggleRoutineEdit(){
+				if ($("#routineIntervalType").is(":checked")){
+					$("#secondsDiv").css("display", "");
+					$("#clockDiv").css("display", "none");
+				}
+				else{
+					$("#secondsDiv").css("display", "none");
+					$("#clockDiv").css("display", "");
+				}
+			}
+
+			function displayRoutine(routineID){
+				var r = g_sched[routineID];
+				$("#routineName").val(r.name);
+				$("#routineIntervalStart").datetimepicker("setDate", new Date(r.interval[0]));
+				$("#routineIntervalEnd").datetimepicker("setDate", new Date(r.interval[1]));
+				if("seconds" == r.period.units){
+					$("#secondsDiv").css("display", "");
+					$("#clockDiv").css("display", "none");
+					$("#routineIntervalType").val(true);
+
+					$("#routineSeconds").val(r.period.magnitude);
+				}
+				else{
+
+					$("#secondsDiv").css("display", "none");
+					$("#clockDiv").css("display", "");
+					$("#routineIntervalType").val(false);
+
+					$("#routineUnits").val(r.period.units);
+					$("#routineMagnitude").val(r.period.magnitude);
+
+					$("#routineWallClock").val(r.period.time.isClock);
+
+					$("#routineHour").val(r.period.time.value[2]);
+					$("#routineMinute").val(r.period.time.value[1]);
+					$("#routineSecond").val(r.period.time.value[0]);
+				}
+
+				$("#editRoutineDiv").css("display", "");
+			}
+
 
 			$(document).ready(function() {
 				$("#tabDiv").tabs();
@@ -25,9 +70,58 @@
 				$("#startTime").datetimepicker();
 				$("#endTime").datetimepicker();
 
+				$("#routineIntervalStart").datetimepicker();
+				$("#routineIntervalEnd").datetimepicker();
+
+				$("#routineIntervalType").click(toggleRoutineEdit);
+
 				/* Populate Task Definitions. */
 				$.couch.app(function(app) {
 					var db = $.couch.db(DB_NAME);
+
+					function commitRoutine(routineID){
+						var r = {
+							"_id" : routineID,
+							"_rev" : g_sched[routineID]._rev,
+							"name" : $("#routineName").val(),
+							"taskID" : g_sched[routineID].taskID,
+							"active" : true,
+							"interval" : [
+								$("#routineIntervalStart").datetimepicker("getDate").getTime(),
+								$("#routineIntervalEnd").datetimepicker("getDate").getTime()
+							],
+							"period" : {
+							}
+						};
+
+						if("true" == $("#routineIntervalType").val()){
+							r.period.units = "seconds";
+							r.period.magnitude = $("#routineSeconds").val();
+						}
+						else{
+							r.period.units = $("#routineUnits").val();
+							r.period.magnitude = $("#routineMagnitude").val();
+							r.period.time = {
+								"isClock" : ($("#routineWallClock").val() == "true"),
+								"value":[
+									$("#routineSecond").val(),
+									$("#routineMinute").val(),
+									$("#routineHour").val()
+								]
+							};
+						}
+
+						db.saveDoc(r, {
+							"success":function(data, textStatus){
+								alert("Successful commit.");
+								document.location.reload();
+
+							},
+							"error":function(xhr, textStatus, error){
+								alert("Error saving: " + error);
+							}
+						});
+					}
 
 					function genRetryTrigger(triggerID, errorID){
 						return function(){
@@ -58,6 +152,37 @@
 							);
 						}
 					}
+
+					db.view("SchedDeskApp/Schedule", {
+							"startkey" : 1,
+							"include_docs" : true,
+							"reduce" : false,
+							"success":
+								function(scheduleRes){
+									function genEditButton(routineID){
+										var button = $("<input type=\"Button\" value=\"Configure\">");
+										button.click(function(){
+											displayRoutine(routineID);
+											$("#commitRoutine").click(function(){
+												commitRoutine(routineID);
+											});
+										});
+										return button;
+									}
+
+									var listing = $("#routineListing").empty();
+									for(var i = 0; i < scheduleRes.rows.length; ++i){
+										var r = scheduleRes.rows[i].doc;
+										g_sched[r._id] = r;
+
+										var row = $("<tr><td>"+ r.name +"</td></tr>");
+										row.append(genEditButton(r._id));
+										listing.append(row);
+									}
+								}
+						}
+					);
+
 
 					db.view("SchedDeskApp/Tasks",
 						{
@@ -299,7 +424,72 @@
 			</div>
 
 			<div id="scheduleTab">
-				<h1>TODO</h1>
+				<h1>Routine Listing</h1>
+				<table>
+					<thead>
+						<th>Name</th>
+						<th>Configure</th>
+					</thead>
+					<tbody id="routineListing">
+					</tbody>
+				</table>
+				<p/>
+
+				<div id="editRoutineDiv" style="display:none">
+					<h1>Routine Configuration</h1>
+					Name:<input type="text" id="routineName" size="50"/>
+					<p/>
+					Active Interval Start:<input type="text" id="routineIntervalStart"/>
+					<br/>
+					Active Interval End:<input type="text" id="routineIntervalEnd"/>
+					<p/>
+					Use Absolute Period:<input type="checkbox" id="routineIntervalType"/>
+					<p/>
+					<p/>
+					<div id="secondsDiv">
+						Period Length (in seconds):<input type="text" id="routineSeconds"/>
+					</div>
+					<div id="clockDiv" style="display:none">
+						<table>
+							<tr>
+								<td>Time of Day</td>
+							</tr>
+							<tr>
+								<td>Wall Clock Time:</td>
+								<td><input type="checkbox" id="routineWallClock"/></td>
+							</tr>
+							<tr>
+								<td>Hour:</td>
+								<td><input type="text" id="routineHour"/></td>
+							</tr>
+							<tr>
+								<td>Minute:</td>
+								<td><input type="text" id="routineMinute"/></td>
+							</tr>
+							<tr>
+								<td>Second:</td>
+								<td><input type="text" id="routineSecond"/></td>
+							</tr>
+
+							<tr>
+								<td>Interval Magnitude:</td>
+								<td>
+									<select  id="routineUnits">
+										<option value="days">Day</option>
+										<option value="months">Month</option>
+										<option value="years">Year</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Count:</td>
+								<td><input type="text" id="routineMagnitude"/></td>
+							</tr>
+
+						</table>
+					</div>
+					<input type="button" value="Commit" id="commitRoutine"/>
+				</div>
 			</div>
 
 			<div id="logTab">
