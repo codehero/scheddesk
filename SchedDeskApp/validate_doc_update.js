@@ -177,7 +177,12 @@ function (newDoc, savedDoc, userCtx){
 			case "timedTrigger":
 				break;
 
+			case "emailConfig":
+				break;
+
+			case "forcedAbort":
 			case "exitCodeError":
+			case "notificationError":
 				require("scheddesk_err_report");
 				if(isNaN(newDoc.scheddesk_err_report.timestamp))
 					throw({"forbidden":"No numeric timestamp in error!"});

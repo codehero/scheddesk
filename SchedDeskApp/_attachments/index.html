@@ -177,6 +177,51 @@
 						}
 					);
 
+					/* Get email configuration. */
+					db.openDoc("scheddesk.emailConfig.0",
+						{
+							"success":function(doc){
+								$("#SMTP_Server").val(doc.SMTP.host);
+								$("#SMTP_Sender").val(doc.sender);
+								$("#SMTP_To").val(doc.to);
+								$("#SMTP_Subject").val(doc.subject);
+							}
+						}
+					);
+
+					$("#updateEmail").click(function(){
+						var tdoc = {
+							"_id": "scheddesk.emailConfig.0",
+							"SMTP":{
+								"host":$("#SMTP_Server").val()
+							},
+							"sender": $("#SMTP_Sender").val(),
+							"subject": $("#SMTP_Subject").val(),
+							"to" : $("#SMTP_To").val()
+						};
+
+						db.openDoc("scheddesk.emailConfig.0",
+							{
+								"success":function(current){
+									for(x in tdoc)
+										current[x] = tdoc[x];
+									db.saveDoc(current, {
+										"success":function(data, textStatus){
+											alert("Committed updated email settings.");
+										}
+									});
+								},
+								"error":function(stat, error, reason){
+									db.saveDoc(tdoc, {
+										"success":function(data, textStatus){
+											alert("Committed new email settings.");
+										}
+									});
+								}
+							}
+						);
+					});
+
 					/*  */
 					$("#doLogQuery").click(function(){
 						try{
@@ -213,8 +258,9 @@
 					});
 
 				});
-
 			});
+
+
 		</script>
 	</head>
 
@@ -226,6 +272,7 @@
 				<li><a href="#scheduleTab"><span>Routine Schedule</span></a></li>
 				<li><a href="#logTab"><span>Log</span></a></li>
 				<li><a href="#errorTab"><span>Unresolved Errors</span></a></li>
+				<li><a href="#configTab"><span>Email Configuration</span></a></li>
 			</ul>
 
 			<div id="taskDefTab">
@@ -294,6 +341,32 @@
 					</thead>
 					<tbody id="errorTableBody"></tbody>
 				</table>
+			</div>
+
+			<div id="configTab">
+				<table border="1">
+					Email:
+					<tbody>
+						<tr>
+							<td>SMTP Server</td>
+							<td><input id="SMTP_Server" type="text"/></td>
+						</tr>
+						<tr>
+							<td>Default Sender</td>
+							<td><input id="SMTP_Sender" type="text"/></td>
+						</tr>
+						<tr>
+							<td>Default To</td>
+							<td><input id="SMTP_To" type="text"/></td>
+						</tr>
+						<tr>
+							<td>Default Subject</td>
+							<td><input id="SMTP_Subject" type="text"/></td>
+						</tr>
+					</tbody>
+				</table>
+				<input id="updateEmail" type="button" value="Update Email Settings"/>
+
 			</div>
 
 		</div>

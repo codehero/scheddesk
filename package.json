@@ -1,10 +1,15 @@
 {
 	"name" : "scheddesk",
 	"description" : "Task Scheduler",
-	"version" : "0.1.0",
+	"version" : "0.2.0",
 	"preferGlobal" : false,
 	"homepage" : "https://github.com/codehero/scheddesk",
 	"author" : "Dave Bender",
+
+	"dependencies":{
+		"nodemailer":"",
+		"couchdb-api":""
+	},
 
 	"scripts":{
 	},

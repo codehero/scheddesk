@@ -11,6 +11,7 @@ function(doc){
 			emit(doc.triggerID, {"mask":0x8, "ts":doc.timestamp, "_id":doc._id});
 
 			if("scheddesk_retry" in doc){
+				/* Cancel out the dequeue. */
 				emit(doc.scheddesk_retry.triggerID,
 					{"mask":0x2, "ts":doc.timestamp, "_id":doc._id});
 			}
