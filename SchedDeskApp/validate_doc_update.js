@@ -97,6 +97,11 @@ function (newDoc, savedDoc, userCtx){
 					if(v.length != valueLength)
 						throw({"forbidden":"period.time.value has incorrect length!"});
 
+					for(var i = 0; i < v.length; ++i){
+						if(isNaN(v[i]))
+							throw({"forbidden":"period.time.value has non numeric elements!"});
+					}
+
 					/* Check seconds, minutes. */
 					if(v[0] < 0 || v[0] > 59)
 						throw({"forbidden":"Invalid time value seconds!"});
@@ -138,11 +143,6 @@ function (newDoc, savedDoc, userCtx){
 					require("name");
 					require("taskType");
 					require("filesTermination");
-					if(newDoc.taskType ==  "child_process"){
-						require("params");
-						if(!newDoc.params.command)
-							throw({"forbidden":"Child process must define a command!"});
-					}
 				}
 				break;
 
@@ -180,9 +180,8 @@ function (newDoc, savedDoc, userCtx){
 			case "emailConfig":
 				break;
 
-			case "forcedAbort":
 			case "exitCodeError":
-			case "notificationError":
+			case "error":
 				require("scheddesk_err_report");
 				if(isNaN(newDoc.scheddesk_err_report.timestamp))
 					throw({"forbidden":"No numeric timestamp in error!"});
