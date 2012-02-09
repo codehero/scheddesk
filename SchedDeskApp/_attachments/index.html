@@ -96,17 +96,17 @@
 
 						if("true" == $("#routineIntervalType").val()){
 							r.period.units = "seconds";
-							r.period.magnitude = $("#routineSeconds").val();
+							r.period.magnitude = parseInt($("#routineSeconds").val());
 						}
 						else{
 							r.period.units = $("#routineUnits").val();
-							r.period.magnitude = $("#routineMagnitude").val();
+							r.period.magnitude = parseInt($("#routineMagnitude").val());
 							r.period.time = {
 								"isClock" : ($("#routineWallClock").val() == "true"),
 								"value":[
-									$("#routineSecond").val(),
-									$("#routineMinute").val(),
-									$("#routineHour").val()
+									parseInt($("#routineSecond").val()),
+									parseInt($("#routineMinute").val()),
+									parseInt($("#routineHour").val())
 								]
 							};
 						}
@@ -476,8 +476,8 @@
 								<td>
 									<select  id="routineUnits">
 										<option value="days">Day</option>
-										<option value="months">Month</option>
-										<option value="years">Year</option>
+										<!--option value="months">Month</option>
+										<option value="years">Year</option-->
 									</select>
 								</td>
 							</tr>
