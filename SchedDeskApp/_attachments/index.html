@@ -153,6 +153,25 @@
 						}
 					}
 
+					function genTerminateTrigger(triggerID){
+						return function(){
+							var reason = prompt("Please specify a reason for aborting this task");
+							var now = new Date().getTime();
+							var tdoc = {
+								 "_id": "scheddesk.termination." + now,
+									"triggerID": triggerID,
+									"timestamp": now,
+									"reason" : reason
+							};
+							db.saveDoc(tdoc, {
+								"success":function(data, textStatus){
+									alert("Task aborted");
+									document.location.reload();
+								}
+							});
+						}
+					}
+
 					db.view("SchedDeskApp/Schedule", {
 							"startkey" : 1,
 							"include_docs" : true,
@@ -291,11 +310,13 @@
 										e.key,
 										dataLink(e.key, "Go"),
 										dataLink(e.value._id, "Go"),
-										"<input type=\"button\" value=\"Initiate\"/>"
+										"<input type=\"button\" value=\"Initiate\" class=\"retry\"/>",
+										"<input type=\"button\" value=\"Abort\" class=\"abort\"/>"
 									];
 									row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
 
-									row.find("input").click(genRetryTrigger(e.key, e.value._id));
+									row.find("input.retry").click(genRetryTrigger(e.key, e.value._id));
+									row.find("input.abort").click(genTerminateTrigger(e.key));
 									tbody.append(row);
 								}
 							}
@@ -528,6 +549,7 @@
 						<th>Trigger Details</th>
 						<th>Error Details</th>
 						<th>Retry</th>
+						<th>Abort</th>
 					</thead>
 					<tbody id="errorTableBody"></tbody>
 				</table>
