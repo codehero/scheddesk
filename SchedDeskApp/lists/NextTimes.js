@@ -1,13 +1,14 @@
 function(head, req){
 	/* Make sure that the params are defined. */
-	if(!("ts" in req.query))
+	if(!("local" in req.query))
 		throw new Error("No time specified!");
-	var ts = parseInt(req.query.ts);
-	if(isNaN(ts))
+	var local = parseInt(req.query.local);
+	if(isNaN(local))
 		throw new Error("Time must be numeric!");
 
+	var now = new Date().getTime();
 	/* This function does the actual time calculation. */
-	function calc(routine, now){
+	function calc(routine, localTime){
 		var ret = null;
 
 		/* Calculate next execution time. */
@@ -23,7 +24,7 @@ function(head, req){
 
 			case "days":
 				/* Translate date to local time zone. */
-				var d = new Date(now);
+				var d = new Date(localTime);
 
 				var rt = routine.period.time;
 				/* Can calculate in one of two ways:
@@ -31,20 +32,20 @@ function(head, req){
 				 * -Offset the day by an absolute number of hh:mm:ss */
 				if(rt.isClock){
 
-					var dn = new Date(d.getFullYear(), d.getMonth(), d.getDate(),
+					var dn = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
 						rt.value[2], rt.value[1], rt.value[0]);
 
 					ret = dn.getTime();
 				}
 				else{
-					var dn = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+					var dn = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 					dn = dn.getTime();
 					dn += (3600 * rt.value[2] + 60 * rt.value[1] + rt.value[0]) * 1000;
 					ret = dn;
 				}
 
 				/* If we already missed the date, forget and it plan for the next one. */
-				if(ret < now){
+				if(ret < localTime){
 					ret += 86400000;
 				}
 				break;
@@ -73,7 +74,7 @@ function(head, req){
 		var routine = row.doc;
 
 		try{
-			var utcTime = calc(routine, ts);
+			var utcTime = calc(routine, local);
 			if(utcTime < routine.interval[1]){
 				if(resCount)
 					send(",");
