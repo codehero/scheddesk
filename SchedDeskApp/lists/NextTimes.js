@@ -32,13 +32,13 @@ function(head, req){
 				 * -Offset the day by an absolute number of hh:mm:ss */
 				if(rt.isClock){
 
-					var dn = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+					var dn = new Date(d.getFullYear(), d.getMonth(), d.getDate(),
 						rt.value[2], rt.value[1], rt.value[0]);
 
 					ret = dn.getTime();
 				}
 				else{
-					var dn = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+					var dn = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 					dn = dn.getTime();
 					dn += (3600 * rt.value[2] + 60 * rt.value[1] + rt.value[0]) * 1000;
 					ret = dn;
@@ -46,6 +46,7 @@ function(head, req){
 
 				/* If we already missed the date, forget and it plan for the next one. */
 				if(ret < localTime){
+					/* FIXME doesn't work with DST! */
 					ret += 86400000;
 				}
 				break;
