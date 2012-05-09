@@ -35,12 +35,13 @@
 			function displayRoutine(routineID){
 				var r = g_sched[routineID];
 				$("#routineName").val(r.name);
+				$("#taskSelect").val(r.taskID);
 				$("#routineIntervalStart").datetimepicker("setDate", new Date(r.interval[0]));
 				$("#routineIntervalEnd").datetimepicker("setDate", new Date(r.interval[1]));
 				if("seconds" == r.period.units){
 					$("#secondsDiv").css("display", "");
 					$("#clockDiv").css("display", "none");
-					$("#routineIntervalType").val(true);
+					$("#routineIntervalType").attr("checked", true);
 
 					$("#routineSeconds").val(r.period.magnitude);
 				}
@@ -84,7 +85,7 @@
 							"_id" : routineID,
 							"_rev" : g_sched[routineID]._rev,
 							"name" : $("#routineName").val(),
-							"taskID" : g_sched[routineID].taskID,
+							"taskID" : $("#taskSelect").val(),
 							"active" : true,
 							"interval" : [
 								$("#routineIntervalStart").datetimepicker("getDate").getTime(),
@@ -94,7 +95,7 @@
 							}
 						};
 
-						if("true" == $("#routineIntervalType").val()){
+						if($("#routineIntervalType").attr("checked")){
 							r.period.units = "seconds";
 							r.period.magnitude = parseInt($("#routineSeconds").val());
 						}
@@ -228,6 +229,7 @@
 									}
 								}
 
+								var taskSelect = $("#taskSelect").empty();
 								for(var i = 0; i < data.rows.length; ++i){
 									var row = [
 										data.rows[i].key,
@@ -239,6 +241,10 @@
 									row = $("<tr><td>"+ row.join("</td><td>") +"</td></tr>");
 									row.find("input").click(genTrigger(data.rows[i].id));
 									tbody.append(row);
+
+									var opt ="<option value=\"" + data.rows[i].id
+										+ "\">" + data.rows[i].key + "</option>";
+									taskSelect.append($(opt));
 								}
 							}
 						}
@@ -403,6 +409,25 @@
 						}
 					});
 
+					$("#addRoutine").click(function(){
+						var ts = new Date().getTime();
+						var routineID = "scheddesk.routine.webCreated" + ts;
+						g_sched[routineID] = {
+							"interval" : [
+							],
+							"period" : {
+								"units" : "seconds",
+								"magnitude" : 10000
+							}
+						};
+
+						displayRoutine(routineID);
+
+						$("#commitRoutine").click(function(){
+							commitRoutine(routineID);
+						});
+
+					});
 				});
 			});
 
@@ -456,9 +481,13 @@
 				</table>
 				<p/>
 
+				<td><input type="button" id="addRoutine" value="New Routine"/></td>
+
 				<div id="editRoutineDiv" style="display:none">
 					<h1>Routine Configuration</h1>
 					Name:<input type="text" id="routineName" size="50"/>
+					<br/>
+					Task Type:<select id="taskSelect"></select>
 					<p/>
 					Active Interval Start:<input type="text" id="routineIntervalStart"/>
 					<br/>
